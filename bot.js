@@ -1,147 +1,201 @@
 import admin from "firebase-admin";
 
-// ---------- 1. إعداد Firebase ----------
+// ================= 🔐 Firebase =================
 const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
+
 if (!admin.apps.length) {
-  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
 }
+
 const db = admin.firestore();
 
-// ---------- 2. قاعدة بيانات الشخصيات (تم دمج الخبرات والاستثمارات) ----------
+// ================= 👥 الشخصيات =================
 const characters = [
+  // 🦈 Sharks (مستشارين)
   {
-    name: "نجيب ساويرس (AI)",
-    type: "shark",
-    role: "Global Investor",
-    location: "مصر",
-    specialty: "العقارات، الذهب، الاتصالات، السياسة المالية",
-    traits: "جريء، ابن بلد، لا يخشى الجدل، يكره البيروقراطية، يحب تشجيع الشباب المبتكر.",
-    photo: "https://unavatar.io/twitter/naguibsawiris"
+    name: "أحمد الجوهري",
+    role: "مستشار أعمال",
+    bio: "بيفكر بمنطق الأرقام والاستثمار طويل المدى",
+    type: "shark"
   },
   {
-    name: "إيلون ماسك (AI)",
-    type: "shark",
-    role: "Tech Titan",
-    location: "Global",
-    specialty: "الذكاء الاصطناعي، الفضاء، السيارات الكهربائية، الهندسة",
-    traits: "رؤية مستقبلية، ساخر، مهووس بالكفاءة، يكره الأساليب التقليدية، لغته تقنية وعميقة.",
-    photo: "https://unavatar.io/twitter/elonmusk"
+    name: "سامي الحديدي",
+    role: "رجل صناعة",
+    bio: "خبير مصانع وتوسعات إنتاج",
+    type: "shark"
   },
   {
-    name: "عبد الله سلام (AI)",
-    type: "shark",
-    role: "Real Estate Visionary",
-    location: "مصر",
-    specialty: "التطوير العقاري، البراندنج، الابتكار في التصميم",
-    traits: "هادئ، مثقف، يركز على التفاصيل والقيمة المضافة، كلامه موزون جداً.",
-    photo: "https://ui-avatars.com/api/?name=Abdallah+Salam&background=000&color=fff"
+    name: "هالة منصور",
+    role: "خبيرة براندنج",
+    bio: "بتحب المشاريع المنظمة والبراند القوي",
+    type: "shark"
   },
   {
-    name: "كيفن أوليري (AI)",
-    type: "shark",
-    role: "Financial Guru",
-    location: "Canada/USA",
-    specialty: "توزيعات الأرباح، الكاش فلو، القروض، التقييم المالي",
-    traits: "قاسي، صريح، يقدس المال، يقتل المشاعر في البيزنس، لقبه 'Mr. Wonderful'.",
-    photo: "https://unavatar.io/twitter/kevinolearytv"
+    name: "عادل فوزي",
+    role: "محلل مالي",
+    bio: "كل قراراته مبنية على أرقام وتحليل",
+    type: "shark"
+  },
+
+  // 💼 Entrepreneurs
+  {
+    name: "كريم أحمد",
+    role: "صاحب مشروع أكل",
+    bio: "بيحاول يكبر مشروعه في السوق",
+    type: "contestant"
   },
   {
-    name: "مصطفى الضوي",
-    type: "contestant",
-    role: "Manufacturer",
-    location: "مصر",
-    specialty: "التصنيع المحلي، سلاسل الإمداد، السوق الشعبي",
-    traits: "مكافح، عملي جداً، يواجه مشاكل الأرض والواقع، لغته بسيطة وقوية.",
-    photo: "https://ui-avatars.com/api/?name=Mostafa+Dawy&background=ffeb3b&color=000"
+    name: "سارة مصطفى",
+    role: "مصممة جرافيك",
+    bio: "فريلانس وبتتعامل مع عملاء صعبين",
+    type: "contestant"
   },
   {
-    name: "نورا (The Hair Addict)",
-    type: "contestant",
-    role: "Beauty Brand Founder",
-    location: "مصر/الإمارات",
-    specialty: "التسويق عبر المجتمعات، البراندنج، التجارة الإلكترونية",
-    traits: "ملهمة، تركز على تمكين المرأة، تهتم بجودة المنتج وعلاقتها بالجمهور.",
-    photo: "https://ui-avatars.com/api/?name=Noura&background=f472b6&color=fff"
+    name: "محمد علي",
+    role: "مطور تطبيقات",
+    bio: "بيعمل مشاريع تقنية وبيحاول ينجح",
+    type: "contestant"
+  },
+  {
+    name: "مريم خالد",
+    role: "صاحبة متجر أونلاين",
+    bio: "عندها مشاكل شحن ومنافسة",
+    type: "contestant"
+  },
+  {
+    name: "يوسف سامي",
+    role: "متداول كريبتو",
+    bio: "بيتكلم عن المخاطرة والاستثمار",
+    type: "contestant"
+  },
+  {
+    name: "دنيا إبراهيم",
+    role: "مسوقة رقمية",
+    bio: "بتفهم في السوشيال ميديا والترندات",
+    type: "contestant"
   }
 ];
 
-// ---------- 3. محرك المواقع والزوايا (Context Engine) ----------
-const contexts = [
-  { topic: "الفشل", angle: "ازاي الفشل كان درس بمليون جنيه" },
-  { topic: "الاستثمار", angle: "ليه الذهب/العقارات/الأسهم هم الأمان دلوقت" },
-  { topic: "الروتين", angle: "ليه الموظف مش هيبقي غني أبداً" },
-  { topic: "الذكاء الاصطناعي", angle: "ازاي الـ AI هياكل شغل الناس الكسلانة" },
-  { topic: "السوق المصري", angle: "الفرص اللي موجودة وسط الأزمات" },
-  { topic: "التمويل", angle: "امتى تطلب استثمار وامتى تعتمد على نفسك (Bootstrapping)" }
+// ================= 🧠 مواضيع =================
+const topics = [
+  "خسرت أول مشروع ليا",
+  "هل الاستثمار في العقارات مفيد؟",
+  "مشكلة الشحن والتوصيل",
+  "إزاي أجيب أول عميل؟",
+  "هل أسيب شغلي وأبدأ بيزنس؟",
+  "تسعير المنتجات",
+  "الذكاء الاصطناعي في البيزنس",
+  "المنافسة في السوق",
+  "الشراكة في المشاريع",
+  "إدارة الفلوس"
 ];
 
-// ---------- 4. دالة التوليد العبقرية (The Master Prompt) ----------
-async function generateNaturalPost(user) {
-  const url = "https://api.groq.com/openai/v1/chat/completions";
-  const context = contexts[Math.floor(Math.random() * contexts.length)];
-  
-  // بناء برومبت هندسي (Prompt Engineering)
+// ================= 🔁 منع التكرار =================
+const metaRef = db.collection("meta").doc("topics");
+
+async function getTopic() {
+  const snap = await metaRef.get();
+  let used = snap.exists ? snap.data().used || [] : [];
+
+  const available = topics.filter(t => !used.includes(t));
+  const topic =
+    available.length > 0
+      ? available[Math.floor(Math.random() * available.length)]
+      : topics[Math.floor(Math.random() * topics.length)];
+
+  await metaRef.set({
+    used: [...used.slice(-15), topic]
+  });
+
+  return topic;
+}
+
+// ================= 🤖 AI =================
+async function generatePost(user) {
+  const topic = await getTopic();
+
   const prompt = `
-  المهمة: اكتب بوست "لينكد إن/فيسبوك" حقيقي لشخصية حقيقية.
-  الشخصية: ${user.name} (${user.role}).
-  المكان: ${user.location}.
-  الخبرة: ${user.specialty}.
-  السمات: ${user.traits}.
-  الموضوع المطلوب: ${context.topic} (${context.angle}).
+أنت شخص مصري اسمه ${user.name}.
+وظيفتك: ${user.role}
+خلفيتك: ${user.bio}
 
-  القواعد الذهبية (ممنوع مخالفتها):
-  1. اللغة: استخدم العامية المصرية الراقية (White Slang) للمصريين، والعربية البيضاء الممزوجة بمصطلحات بيزنس إنجليزية (Business Slang) للأجانب (مثل إيلون وماسك وكيفن).
-  2. الأسلوب: ابدأ بـ Hook صادم أو سؤال مستفز. ممنوع المقدمات مثل "أهلاً بكم" أو "في هذا المقال".
-  3. المحتوى: تحدث من واقع خبرتك. (مثلاً ساويرس يتكلم عن ملياراته، والضوي يتكلم عن مصنعه).
-  4. النصيحة: لا تعطي نصائح "مدرسية". أعطِ نصائح من "نار" البيزنس.
-  5. الطول: من 150 لـ 250 كلمة.
-  6. التفاعل: اختم بسؤال ذكي يثير الجدل.
-  7. الايموجي: 2-3 فقط بحد أقصى وفي سياقهم.
-  `;
+اكتب بوست عن: ${topic}
 
-  const response = await fetch(url, {
+القواعد:
+- لهجة مصرية طبيعية 100%
+- ممنوع الفصحى
+- خليك واقعي
+- شارك أو مستثمر: كلامك تقيل ومختصر
+- عادي: احكي موقف أو مشكلة
+- لازم سؤال في النهاية
+- استخدم تعبيرات زي: لبست في الحيط، الزتونة، عك، سوق
+`;
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
+      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({
       model: "llama-3.3-70b-versatile",
       messages: [
-        { role: "system", content: `أنت لست بوت. أنت تتقمص الشخصية بكل جوارحها. إذا كنت إيلون ماسك، فكّر كمخترع مجنون. إذا كنت ساويرس، فكّر كحوت عقارات.` },
+        { role: "system", content: "مصري بيكتب بوستات بيزنس طبيعية جدًا." },
         { role: "user", content: prompt }
       ],
-      temperature: 0.9 // درجة حرارة عالية لزيادة الإبداع والبعد عن التكرار
+      temperature: user.type === "shark" ? 0.6 : 0.95
     })
   });
 
-  const data = await response.json();
-  return data.choices[0].message.content;
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content;
 }
 
-// ---------- 5. الوظيفة الأساسية (Run) ----------
+// ================= 🛡️ fallback =================
+function fallback(user) {
+  const posts = [
+    "حد جرب يخسر في مشروع ويرجع يقف تاني؟",
+    "أنا لبست في الحيط قبل كده في بيزنس 😅",
+    "أهم حاجة تبدأ حتى لو مش جاهز",
+    "السوق صعب بس فيه فرص حقيقية"
+  ];
+  return posts[Math.floor(Math.random() * posts.length)];
+}
+
+// ================= 🚀 التشغيل =================
 async function run() {
   try {
     const user = characters[Math.floor(Math.random() * characters.length)];
-    console.log(`🚀 الشخصية المختارة للظهور: ${user.name}`);
 
-    const content = await generateNaturalPost(user);
-    if (!content) return;
+    console.log("🧠 بيكتب:", user.name);
+
+    let content;
+
+    try {
+      content = await generatePost(user);
+    } catch (e) {
+      console.log("⚠️ fallback شغال");
+      content = fallback(user);
+    }
 
     await db.collection("posts").add({
       content: content.trim(),
       authorName: user.name,
-      authorPhoto: user.photo,
       authorRole: user.role,
+      authorPhoto: `https://i.pravatar.cc/150?u=${encodeURIComponent(user.name)}`,
       isShark: user.type === "shark",
       ai: true,
-      stats: { likes: 0, comments: 0, shares: 0 },
+      supportCount: 0,
+      opposeCount: 0,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log(`🎉 تم النشر بنجاح!`);
-  } catch (error) {
-    console.error("💥 خطأ في التنفيذ:", error.message);
+    console.log("✅ تم نشر بوست:", user.name);
+
+  } catch (err) {
+    console.error("💥 خطأ:", err.message);
   }
 }
 
