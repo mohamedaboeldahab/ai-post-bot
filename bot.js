@@ -8,30 +8,69 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 // 2. إعدادات Groq API
-const GROQ_API_KEY = process.env.GROQ_API_KEY; // هتحتاج تجيب Key من Groq (مجاني)
-const MODEL_NAME = "llama-3.3-70b-versatile"; // موديل جبار ومجاني
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const MODEL_NAME = "llama-3.3-70b-versatile"; // موديل جبار في فهم اللهجات
 
-// 3. قاعدة بيانات الشخصيات
+// 3. شخصيات "Sharkup" الجديدة (أسماء مصرية واقعية)
 const characters = [
-    { name: "أحمد حسن", photo: "https://i.pravatar.cc/150?img=12", role: "خبير استثمار عقاري وبورصة", bio: "عملي، هادئ، يركز على الأرقام والفرص طويلة المدى." },
-    { name: "سارة محمد", photo: "https://i.pravatar.cc/150?img=5", role: "رائدة أعمال ولايف كوتش", bio: "حماسية، ملهمة، تركز على تطوير الذات وعقلية النجاح." },
-    { name: "كريم علي", photo: "https://i.pravatar.cc/150?img=8", role: "مطور مشاريع وتكنولوجيا", bio: "ذكي، سريع، يعطي خطوات تنفيذية في التسويق والستارت اب." },
-    { name: "منى خالد", photo: "https://i.pravatar.cc/150?img=20", role: "مستشارة إدارة أموال", bio: "ودودة، ناصحة، تهتم بالادخار والذكاء المالي الشخصي." }
+    { 
+        name: "مروان الشافعي", 
+        photo: "https://i.pravatar.cc/150?img=11", 
+        role: "Angel Investor & Tech Mentor", 
+        bio: "مستثمر في شركات ناشئة، بيحب الخلاصة، كلامه قليل بس بيجيب من الآخر، وبيكره التنظير والمصطلحات المعقدة." 
+    },
+    { 
+        name: "سلمى الديب", 
+        photo: "https://i.pravatar.cc/150?img=26", 
+        role: "Business Development Expert", 
+        bio: "شاطرة في البيع وبناء العلاقات، بتهتم جداً بالجانب الإنساني في الشغل وازاي تعمل Personal Brand لنفسك." 
+    },
+    { 
+        name: "ياسين 'الشرك' جلال", 
+        photo: "https://i.pravatar.cc/150?img=33", 
+        role: "E-commerce Strategist", 
+        bio: "خبير في التجارة الإلكترونية، كلامه سريع وبلهجة السوق، دايماً بيحكي مواقف حصلت معاه شخصياً في الشغل." 
+    },
+    { 
+        name: "نورا حسن", 
+        photo: "https://i.pravatar.cc/150?img=41", 
+        role: "Financial Consultant", 
+        bio: "بتحب لغة الفلوس والادخار، أسلوبها زي صديقة بتنصحك في خروجة، كلامها بسيط وبعيد عن تعقيدات البنوك." 
+    }
 ];
 
-// 4. دالة توليد المحتوى باستخدام Groq API
+// 4. دالة توليد المحتوى بأسلوب "سوشيال ميديا" واقعي
 async function generateAIPost(character) {
     const url = "https://api.groq.com/openai/v1/chat/completions";
     
-    const prompt = `أنت الآن ${character.name}، وظيفتك ${character.role}. ${character.bio} 
-    اكتب منشور (Post) دسم ومؤثر بالعامية المصرية لتطبيق Sharkup. 
-    يجب أن يتضمن المنشور نصيحة حقيقية وسؤال تفاعلي في النهاية. 
-    لا تذكر أنك ذكاء اصطناعي. الطول من 70 لـ 150 كلمة.`;
+    const prompt = `
+    أنت الآن الشخصية التالية على سوشيال ميديا (LinkedIn/Facebook):
+    الاسم: ${character.name}
+    التخصص: ${character.role}
+    الخلفية: ${character.bio}
+
+    المهمة: اكتب بوست "حراقة" ومفيد لتطبيق Sharkup.
+    
+    القواعد الذهبية (عشان متبانش بوت):
+    1. اكتب بالعامية المصرية "المودرن" (لغة القعدة مع الصحاب).
+    2. ابدأ بـ "Hook" (جملة تخطف العين أو سؤال مستفز).
+    3. احكي موقف صغير أو فكرة سريعة.. ابعد عن النصايح المعلبة.
+    4. ممنوع نهائياً تقول: "في الختام"، "إليك النصيحة"، "عزيزي المتابع".
+    5. استخدم إيموجيز بذكاء في وسط الكلام مش في آخره بس.
+    6. الخاتمة لازم تكون سؤال صايع يخلي الناس تكتب كومنتات.
+    7. اتمرد على أسلوب الذكاء الاصطناعي التقليدي.. خليك بشري وبتقول رأيك بجرأة.
+    `;
 
     const payload = {
         model: MODEL_NAME,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.7
+        messages: [
+            { 
+                role: "system", 
+                content: "أنت صانع محتوى مصري محترف، بوستاتك دايماً بتجيب تفاعل عالي لأنها واقعية ومش بتبان إنها مكتوبة بذكاء اصطناعي." 
+            },
+            { role: "user", content: prompt }
+        ],
+        temperature: 0.85 // لزيادة الإبداع وتقليل التكرار
     };
 
     const response = await fetch(url, {
@@ -46,8 +85,7 @@ async function generateAIPost(character) {
     const data = await response.json();
 
     if (!response.ok) {
-        console.error("❌ تفاصيل خطأ Groq API:", data);
-        throw new Error(`خطأ من Groq: ${data.error?.message || response.statusText}`);
+        throw new Error(`Groq API Error: ${data.error?.message || response.statusText}`);
     }
 
     return data.choices[0].message.content;
@@ -55,16 +93,15 @@ async function generateAIPost(character) {
 
 // 5. الدالة الأساسية
 async function run() {
-    console.log("🚀 بدء تشغيل بوت Sharkup AI (Groq API Mode)...");
+    console.log("🚀 بدء تشغيل بوت Sharkup AI (Human Mode)...");
     try {
         const character = characters[Math.floor(Math.random() * characters.length)];
         console.log(`👤 الشخصية المختارة: ${character.name}`);
 
-        console.log("⏳ جاري طلب المحتوى من Groq API...");
+        console.log("⏳ جاري توليد البوست بأسلوب بشري...");
         const aiContent = await generateAIPost(character);
-        console.log("✅ تم توليد النص بنجاح.");
-
-        console.log("📡 جاري الرفع إلى Firestore...");
+        
+        console.log("📡 جاري النشر في Firestore...");
         await db.collection("posts").add({
             content: aiContent,
             authorName: character.name,
@@ -77,7 +114,7 @@ async function run() {
             createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        console.log("🎉 تم النشر بنجاح على Sharkup باستخدام Groq!");
+        console.log(`🎉 تم النشر بنجاح بواسطة: ${character.name}`);
     } catch (error) {
         console.error("💥 حدث خطأ أثناء التنفيذ:", error.message);
         process.exit(1);
