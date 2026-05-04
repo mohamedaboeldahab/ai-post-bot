@@ -87,33 +87,25 @@ const topics = [
 ];
 
 // ================= 🔁 اختيار موضوع =================
-async function getTopic() {
+function getTopic() {
   return topics[Math.floor(Math.random() * topics.length)];
 }
 
 // ================= 🤖 توليد بوست طبيعي (مصري خالص) =================
-async function generatePost(user) {
-  const topic = await getTopic();
+async function generatePostContent(user) {
+  const topic = getTopic();
+  const isFemale = user.gender === 'female';
 
-  const prompt = `أنت شخص حقيقي في مصر، بتتكلم بالعامية المصرية الطبيعية جداً اللي بنستخدمها في الشارع والبيت والشغل.
+  const prompt = `أنت ${user.name}، ${user.role}. ${user.mindset}. أسلوبك: ${user.tone}. نبرتك: ${user.dialect}.
 
-اسمك: ${user.name}
-شغلك: ${user.role}
-طريقة تفكيرك: ${user.mindset}
-أسلوبك في الكلام: ${user.tone}
-النبرة المطلوبة: ${user.dialect}
+الموضوع: "${topic}"
 
-الموضوع اللي هتكلم فيه النهاردة: "${topic}"
-
-عايزين بوست قصير (6-10 أسطر) كأنك بتكتب على فيسبوك.
-
-قواعد مهمة جداً:
-- **بالعامية المصرية بس**. ممنوع أي كلمة إنجليزية أو صينية أو أي لغة تانية.
-- **ممنوع استخدام أي رموز أو حروف أجنبية خالص**. حتى لو كلمة متداولة زي "Branding" أو "Marketing" اكتبها بالعربي "براندنج" أو "تسويق".
-- خلي كلامك طبيعي جداً، زي ما بتتكلم مع صاحبك في القهوة أو مع زميلتك في الشغل.
-- ${user.gender === 'male' ? 'أنت راجل، كلامك فيه جدية وخبرة.' : 'أنت ست، كلامك فيه حنية وذوق.'}
-- في الآخر اسأل سؤال بسيط عشان الناس تتفاعل معاك.
-- متنساش تكتب اسمك الحقيقي "${user.name.split(' ')[0]}" في أول البوست لو حابب.`;
+**تعليمات صارمة لكتابة البوست:**
+1.  **اكتب مباشرة، لا تبدأ باسمك أو "فلان:" أبداً.**
+2.  اكتب من ٥ إلى ٨ أسطر بالعامية المصرية الأصيلة، كأنك بتتكلم مع أصحابك.
+3.  ممنوع أي كلمة إنجليزية أو صينية. الكلمات الأجنبية المتداولة تكتب بالعربي (زي "براندنج").
+4.  في النهاية اسأل سؤال بسيط للتفاعل.
+5.  **مهم جداً**: خاطب الجمهور بصيغة المؤنث ("أنتِ"، "جربتي"، "شايفة") لو كنتِ ست، وبصيغة المذكر ("أنت"، "جربت"، "شايف") لو كنت راجل. خليك طبيعي في الخطاب ده.`;
 
   const res = await fetch(
     "https://api.groq.com/openai/v1/chat/completions",
@@ -128,36 +120,50 @@ async function generatePost(user) {
         messages: [
           {
             role: "system",
-            content: "أنت مواطن مصري حقيقي، بتتكلم بالعامية المصرية الأصيلة اللي ملهاش علاقة بالإنجليزي ولا الصيني ولا أي لغة تانية. اكتب بوستات فيسبوك واقعية جداً. ممنوع استخدام أي كلمة مش عربية."
+            content: `أنت شخص مصري حقيقي على فيسبوك. بتكتب بوستات بالعامية المصرية مباشرة بدون ذكر اسمك في البداية. ${isFemale ? 'أنتِ امرأة وتخاطبين النساء بشكل طبيعي.' : 'أنت رجل وتخاطب الجمهور بشكل طبيعي.'}`
           },
           { role: "user", content: prompt },
         ],
-        temperature: 0.6, // أقل لتجنب الهلوسة
+        temperature: 0.6,
         max_tokens: 300
       }),
     }
   );
 
   const data = await res.json();
-  return data.choices?.[0]?.message?.content;
+  let content = data.choices?.[0]?.message?.content || "";
+
+  // --- تنظيف متقدم ---
+  // إزالة اسم الشخصية متبوعًا بنقطتين في بداية النص (مثل "سارة مصطفى:")
+  content = content.replace(/^[\p{L}\s]+?\s*:\s*/u, '');
+  // إزالة أي أحرف إنجليزية
+  content = content.replace(/[a-zA-Z]+/g, (match) => {
+    const translations = {
+      'Branding': 'براندنج', 'Marketing': 'تسويق', 'Startup': 'شركة ناشئة',
+      'Business': 'بيزنس', 'CEO': 'مدير', 'AI': 'ذكاء اصطناعي',
+    };
+    return translations[match] || '';
+  });
+  // إزالة أي رموز صينية أو غريبة
+  content = content.replace(/[\u4e00-\u9fff\u3400-\u4dbf]+/g, '');
+  // إزالة المسافات الزيادة
+  content = content.replace(/\s+/g, ' ').trim();
+
+  return content;
 }
 
-// ================= 🛑 fallback طبيعي (مصري) =================
+// ================= 🛑 fallback طبيعي =================
 function fallback(user) {
-  const topic = topics[Math.floor(Math.random() * topics.length)];
-  const intro = user.gender === 'male' ? "أنا" : "أنا";
-  const name = user.name.split(" ")[0];
+  const topic = getTopic();
+  const isFemale = user.gender === 'female';
+  const pronoun = isFemale ? 'أنتِ' : 'أنت';
 
   const templates = [
-    `${intro} ${name}، ${user.role}. 
- طول النهاردة بفكر في موضوع "${topic}"، بصراحة الموضوع ده شاغل بال ناس كتير. 
- اللي يشوف السوق دلوقتي يلاقي إن فيه فرص كتير بس برضه فيه تحديات. 
- إيه رأيكم؟ حد عنده تجربة في الموضوع ده؟`,
-    
-    `${intro} ${name} من مصر، بشتغل ${user.role}. 
- حابب أتكلم عن "${topic}"، ده موضوع مهم لأي حد بيفكر يبدأ مشروع. 
- أنا شايف إن الأهم هو إن الواحد يبدأ حتى لو بإمكانيات بسيطة. 
- إنتو إيه رأيكم؟`,
+    `طول النهاردة بفكر في موضوع "${topic}"، بصراحة الموضوع ده شاغل بال ناس كتير. اللي يشوف السوق دلوقتي يلاقي إن فيه فرص كتير بس برضه فيه تحديات. إيه رأيكم؟ حد عنده تجربة في الموضوع ده؟`,
+
+    `حابب أتكلم عن "${topic}"، ده موضوع مهم لأي حد بيفكر يبدأ مشروع. أنا شايف إن الأهم هو إن الواحد يبدأ حتى لو بإمكانيات بسيطة. ${pronoun} إيه رأيك؟`,
+
+    `النهاردة جاي أفكر في "${topic}"، والنبي يا جماعة حد يقولي إزاي الواحد ممكن يتعامل مع الموضوع ده؟ أنا محتار بصراحة.`,
   ];
   return templates[Math.floor(Math.random() * templates.length)];
 }
@@ -166,34 +172,14 @@ function fallback(user) {
 async function run() {
   try {
     const user = characters[Math.floor(Math.random() * characters.length)];
-
-    console.log("🧠 بيكتب:", user.name);
+    console.log(`🧠 بيولد بوست لـ ${user.name}...`);
 
     let content;
-
     try {
-      content = await generatePost(user);
-      // تنظيف أي كلمات إنجليزية متبقية
-      content = content.replace(/[a-zA-Z]+/g, (match) => {
-        // لو الكلمة معروفة نترجمها، لو لأ نشيلها
-        const translations = {
-          'Branding': 'براندنج',
-          'Marketing': 'تسويق',
-          'Startup': 'شركة ناشئة',
-          'Business': 'بيزنس',
-          'CEO': 'مدير',
-          'AI': 'ذكاء اصطناعي',
-        };
-        return translations[match] || '';
-      });
-      // إزالة أي رموز صينية أو غريبة
-      content = content.replace(/[\u4e00-\u9fff\u3400-\u4dbf]+/g, '');
-      // إزالة المسافات الزيادة
-      content = content.replace(/\s+/g, ' ').trim();
-      
+      content = await generatePostContent(user);
       if (content.length < 30) throw new Error("Short content");
     } catch (e) {
-      console.log("⚠️ fallback شغال");
+      console.log("⚠️ AI فشل، سيتم استخدام النص الاحتياطي");
       content = fallback(user);
     }
 
@@ -210,10 +196,9 @@ async function run() {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    console.log("✅ تم نشر بوست مصري:", user.name);
+    console.log(`✅ تم نشر بوست مصري لـ ${user.name}`);
   } catch (err) {
-    console.error("💥 Error:", err.message);
-    // إعادة المحاولة مرة واحدة
+    console.error("💥 فشل التشغيل:", err.message);
     setTimeout(() => run(), 5000);
   }
 }
