@@ -33,31 +33,35 @@ const characters = [
   }
 ];
 // بوستات جاهزة (ممكن تطورها AI بعدين)
-const posts = [
-  "الفرص مش بتستنى حد 🚀",
-  "ابدأ صغير لكن ابدأ 💡",
-  "النجاح محتاج جرأة مش خوف 🦈",
-  "الفلوس بتروح للي بيشوف قبل غيره"
-];
+function generatePost(character) {
+  const posts = [
+    "ابدأ صغير لكن فكر كبير 💡",
+    "الفرص مش بتستنى حد 🚀",
+    "استثمر في نفسك الأول 📈",
+    "المخاطرة المحسوبة سر النجاح 🦈"
+  ];
 
-function generatePost(name) {
   const text = posts[Math.floor(Math.random() * posts.length)];
-  return `${name}: ${text}`;
+
+  return {
+    content: text,
+    authorName: character.name,
+    authorPhoto: character.photo
+  };
 }
 
 async function run() {
   const character = characters[Math.floor(Math.random() * characters.length)];
-  const content = generatePost(character);
+  const post = generatePost(character);
 
   await db.collection("posts").add({
-    content,
-    authorName: character,
+    content: post.content,
+    authorName: post.authorName,
+    authorPhoto: post.authorPhoto,
     type: "post",
     ai: true,
     createdAt: admin.firestore.FieldValue.serverTimestamp()
   });
 
-  console.log("Posted:", content);
+  console.log("تم نشر بوست من:", post.authorName);
 }
-
-run();
