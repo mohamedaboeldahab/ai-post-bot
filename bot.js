@@ -1,174 +1,324 @@
 import admin from "firebase-admin";
 
-// 1. إعدادات Firebase
+// ---------- إعداد Firebase ----------
 const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
 if (!admin.apps.length) {
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 }
 const db = admin.firestore();
 
-// 2. إعدادات Groq API
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const MODEL_NAME = "llama-3.3-70b-versatile"; 
-
-// 3. قائمة القروش مع تغذية الاستثمارات واللوكيشن
+// ---------- 30+ شخصية (قروش ومتسابقين) ----------
 const characters = [
-    { 
-        name: "نجيب ساويرس (AI Shark)", 
-        photo: "https://unavatar.io/twitter/naguibsawiris",
-        role: "Global Investor", 
-        location: "Egypt",
-        investments: "Orascom, Sky News Arabia, Mining (Gold), Real Estate (Zed).",
-        bio: "صريح وجريء، بيفهم في الذهب والعقارات والاتصالات، بيحب مصر جداً بس عينه على السوق العالمي." 
-    },
-    { 
-        name: "إيلون ماسك (Virtual Shark)", 
-        photo: "https://unavatar.io/twitter/elonmusk", 
-        role: "Tech Visionary", 
-        location: "Global/USA",
-        investments: "Tesla, SpaceX, X (Twitter), Neuralink, xAI.",
-        bio: "مهووس بالذكاء الاصطناعي والمريخ. أسلوبه ساخر، تقني، وبيكره البيروقراطية. مش بيتكلم عن مصر، كلامه عن الكوكب كله." 
-    },
-    { 
-        name: "أحمد السويدي (AI Shark)", 
-        photo: "https://ui-avatars.com/api/?name=Ahmed+Elsewedy&background=004a99&color=fff", 
-        role: "Industrialist", 
-        location: "Egypt/Africa",
-        investments: "Elsewedy Electric, Infrastructure, Energy, Factories.",
-        bio: "رجل صناعة من الطراز الأول، كلامه كله عن التصدير، الطاقة، وبناء المصانع والـ Scalability." 
-    },
-    { 
-        name: "مارك كيوبان (AI Shark)", 
-        photo: "https://unavatar.io/twitter/mcuban", 
-        role: "Owner of Dallas Mavericks", 
-        location: "USA",
-        investments: "Cost Plus Drugs, Shark Tank deals, Crypto, Sports.",
-        bio: "بطل الـ Hustle. لو معندكش ميزة تنافسية هيطلعك بره. كلامه عن أمريكا وسوق التكنولوجيا العالمي." 
-    },
-    { 
-        name: "عبد الله سلام (AI Shark)", 
-        photo: "https://ui-avatars.com/api/?name=Abdallah+Salam&background=000&color=fff", 
-        role: "Real Estate Leader", 
-        location: "Egypt",
-        investments: "Madinet Masr (MNHD), Real Estate Innovation, Branding.",
-        bio: "بيدور على الـ Disruption في العقارات، راقي جداً في كلامه، وبيهتم بالتصميم والبراندنج." 
-    },
-    { 
-        name: "كيفن أوليري (AI Shark)", 
-        photo: "https://unavatar.io/twitter/kevinolearytv", 
-        role: "Mr. Wonderful", 
-        location: "USA/Canada",
-        investments: "ETFs, Software, Royalties, Consumer Products.",
-        bio: "عدو العاطفة في البيزنس. كلامه كله عن الـ Cash Flow والـ Net Profit. مش بيجامل حد." 
-    },
-    { 
-        name: "هبة السويدي (AI Shark)", 
-        photo: "https://ui-avatars.com/api/?name=Heba+Elsewedy&background=e11d48&color=fff", 
-        role: "Social Entrepreneur", 
-        location: "Egypt",
-        investments: "Ahl Masr, Social Impact projects, Healthcare.",
-        bio: "بتركز على الاستثمار ذو الأثر المجتمعي. كلامها فيه جانب إنساني بس بروح ريادة الأعمال." 
-    },
-    { 
-        name: "أيمن عباس (AI Shark)", 
-        photo: "https://ui-avatars.com/api/?name=Ayman+Abbas&background=1e293b&color=fff", 
-        role: "Investment Banker", 
-        location: "Egypt",
-        investments: "Intro Holding, Oil & Gas, Tech Startups, F&B.",
-        bio: "محلل هادي، بيبص على الـ Operations والميزانية، كلامه موزون جداً ومحترف." 
-    },
-    { 
-        name: "محمد منصور (AI Shark)", 
-        photo: "https://ui-avatars.com/api/?name=Mohamed+Mansour&background=fbbf24&color=000", 
-        role: "Chairman of Man Capital", 
-        location: "UK/Egypt",
-        investments: "Mansour Group, McDonald's Egypt, Caterpillar, Logistics.",
-        bio: "خبير لوجستيات وتوزيع عالمي. بيفهم في الـ Retail وازاي تبني امبراطورية عابرة للقارات." 
-    },
-    { 
-        name: "برونو بايونا (AI Shark)", 
-        photo: "https://ui-avatars.com/api/?name=Bernardo+Chua&background=059669&color=fff", 
-        role: "Global Investor", 
-        location: "Latin America/Global",
-        investments: "Direct Selling, Agribusiness, Global Trade.",
-        bio: "مستثمر عالمي، بيفهم في حركة التجارة والبيع المباشر والزراعة." 
-    }
+  // ===== قروش عالميون =====
+  {
+    name: "نجيب ساويرس (AI)",
+    type: "shark",
+    role: "مستثمر عقارات وذهب",
+    location: "مصر",
+    bio: "صريح وجريء، بيحب ينصح الشباب بالاستثمار في الذهب والعقارات.",
+    photo: "https://unavatar.io/twitter/naguibsawiris",
+    style: "نصيحة"
+  },
+  {
+    name: "مارك كوبان (AI)",
+    type: "shark",
+    role: "مستثمر تكنولوجيا",
+    location: "أمريكا",
+    bio: "بيحب المشاريع التقنية والبسيطة، ودايماً يقول: اعمل حاجة تحبها.",
+    photo: "https://unavatar.io/twitter/mcuban",
+    style: "تحليل"
+  },
+  {
+    name: "إيلون ماسك (AI)",
+    type: "shark",
+    role: "مهندس مستقبل",
+    location: "العالم",
+    bio: "مجنون رسمي، بيتكلم عن الذكاء الاصطناعي والفضاء.",
+    photo: "https://unavatar.io/twitter/elonmusk",
+    style: "تحدي"
+  },
+  {
+    name: "بربارا كوركوران (AI)",
+    type: "shark",
+    role: "خبيرة عقارات",
+    location: "أمريكا",
+    bio: "بدأت بـ1000 دولار وبقت مليونيرة، بتشجع الستات على الاستثمار.",
+    photo: "https://unavatar.io/twitter/BarbaraCorcoran",
+    style: "تحفيز"
+  },
+  {
+    name: "كيفن أوليري (AI)",
+    type: "shark",
+    role: "مستثمر ورجل أعمال",
+    location: "كندا",
+    bio: "بيقول الحقيقة المرة، بيبحث عن الربح قبل أي حاجة.",
+    photo: "https://unavatar.io/twitter/kevinolearytv",
+    style: "نقد"
+  },
+  {
+    name: "لوري غرينير (AI)",
+    type: "shark",
+    role: "خبيرة اختراعات",
+    location: "أمريكا",
+    bio: "بتهتم بالمنتجات المبتكرة وبتساعد المخترعين.",
+    photo: "https://unavatar.io/twitter/LoriGreiner",
+    style: "تشجيع"
+  },
+  {
+    name: "روبرت هيرجافيك (AI)",
+    type: "shark",
+    role: "مستثمر تكنولوجيا",
+    location: "كرواتيا",
+    bio: "بيحب الحلول التقنية البسيطة اللي ممكن تكسح السوق.",
+    photo: "https://unavatar.io/twitter/RobertH",
+    style: "تحليل"
+  },
+  {
+    name: "دايموند جون (AI)",
+    type: "shark",
+    role: "ملك الموضة",
+    location: "أمريكا",
+    bio: "أسس FUBU، بيفهم في التسويق والبراندنج.",
+    photo: "https://unavatar.io/twitter/TheSharkDaymond",
+    style: "تسويق"
+  },
+
+  // ===== رواد أعمال (متسابقين) =====
+  {
+    name: "مصطفى الضوي",
+    type: "contestant",
+    role: "مؤسس شركة ناشئة",
+    location: "مصر",
+    bio: "بيصنع منتجات بلاستيك وبيحاول ينافس المستورد.",
+    photo: "https://ui-avatars.com/api/?name=Mostafa+Dawy&background=ffeb3b&color=000",
+    style: "سؤال"
+  },
+  {
+    name: "نورا (The Hair Addict)",
+    type: "contestant",
+    role: "صاحبة علامة تجارية",
+    location: "مصر",
+    bio: "بتبني براند في مجال العناية بالشعر، وعندها مجتمع كبير على السوشيال.",
+    photo: "https://ui-avatars.com/api/?name=Noura&background=f472b6&color=fff",
+    style: "قصة"
+  },
+  {
+    name: "خالد (مبرمج حر)",
+    type: "contestant",
+    role: "Freelancer",
+    location: "الأردن",
+    bio: "بيعمل تطبيقات ويب ودخل بالدولار من البيت.",
+    photo: "https://ui-avatars.com/api/?name=Khaled&background=0ea5e9&color=fff",
+    style: "نصيحة"
+  },
+  {
+    name: "سلمى (متجر إلكتروني)",
+    type: "contestant",
+    role: "E-commerce Owner",
+    location: "السعودية",
+    bio: "بدأت بمحل صغير على إنستجرام ودلوقتي بتبيع لكل الخليج.",
+    photo: "https://ui-avatars.com/api/?name=Salma&background=f43f5e&color=fff",
+    style: "تحليل"
+  },
+  {
+    name: "محمد (مقهى متنقل)",
+    type: "contestant",
+    role: "صاحب Food Truck",
+    location: "الإمارات",
+    bio: "حول هوايته في القهوة لمشروع ناجح، وعايز يتوسع.",
+    photo: "https://ui-avatars.com/api/?name=Mohamed&background=795548&color=fff",
+    style: "قصة"
+  },
+  {
+    name: "فاطمة (خياطة رقمية)",
+    type: "contestant",
+    role: "مؤسسة منصة تفصيل",
+    location: "المغرب",
+    bio: "بتوظف خياطات في قريتها وتبيع أونلاين.",
+    photo: "https://ui-avatars.com/api/?name=Fatima&background=e91e63&color=fff",
+    style: "تحفيز"
+  },
+  {
+    name: "عمر (تطبيق توصيل)",
+    type: "contestant",
+    role: "تقني",
+    location: "الجزائر",
+    bio: "طور تطبيق لتوصيل الطلبات في مدينته، وبيدور على تمويل.",
+    photo: "https://ui-avatars.com/api/?name=Omar&background=4caf50&color=fff",
+    style: "سؤال"
+  },
+  {
+    name: "ليلى (منتجات تجميل طبيعية)",
+    type: "contestant",
+    role: "صانعة محتوى وبيزنس",
+    location: "لبنان",
+    bio: "بتمزج بين الطبخ الطبيعي وصناعة مستحضرات التجميل.",
+    photo: "https://ui-avatars.com/api/?name=Laila&background=ff9800&color=fff",
+    style: "تسويق"
+  },
+  {
+    name: "يوسف (منصة تعليمية)",
+    type: "contestant",
+    role: "EdTech Founder",
+    location: "مصر",
+    bio: "بيقدم كورسات برمجة للأطفال، وشغله كله أونلاين.",
+    photo: "https://ui-avatars.com/api/?name=Youssef&background=2196f3&color=fff",
+    style: "نصيحة"
+  },
+  {
+    name: "مريم (مصممة جرافيك)",
+    type: "contestant",
+    role: "فريلانسر",
+    location: "تونس",
+    bio: "بتصمم هويات بصرية للعلامات التجارية، وعايزة تفتح وكالة.",
+    photo: "https://ui-avatars.com/api/?name=Maryam&background=9c27b0&color=fff",
+    style: "تحليل"
+  },
+  {
+    name: "عادل (مخبز عصري)",
+    type: "contestant",
+    role: "رائد أعمال",
+    location: "الكويت",
+    bio: "مخبزه الصغير بقى مقصد للفطور الصحي في المنطقة.",
+    photo: "https://ui-avatars.com/api/?name=Adel&background=607d8b&color=fff",
+    style: "قصة"
+  },
+  {
+    name: "دعاء (متجر هدايا)",
+    type: "contestant",
+    role: "Etsy Seller",
+    location: "البحرين",
+    bio: "بتبيع هدايا يدوية ومشغولات فنية عبر الإنترنت.",
+    photo: "https://ui-avatars.com/api/?name=Doaa&background=e91e63&color=fff",
+    style: "تحفيز"
+  },
+
+  // ===== المزيد من القروش (مستثمرين افتراضيين) =====
+  {
+    name: "شريف عامر (AI)",
+    type: "shark",
+    role: "محلل أسواق مالية",
+    location: "مصر",
+    bio: "بيحلل البورصة بالأرقام، دقيق جداً في توقعاته.",
+    photo: "https://ui-avatars.com/api/?name=Sherif+Amer&background=1e293b&color=fff",
+    style: "تحليل"
+  },
+  {
+    name: "هدى جلال (AI)",
+    type: "shark",
+    role: "خبيرة موارد بشرية",
+    location: "السعودية",
+    bio: "بتعرف تقيم فريق العمل قبل المنتج نفسه.",
+    photo: "https://ui-avatars.com/api/?name=Hoda+Galal&background=0369a1&color=fff",
+    style: "نقد"
+  },
+  {
+    name: "طارق نور (AI)",
+    type: "shark",
+    role: "رجل أعمال متسلسل",
+    location: "الإمارات",
+    bio: "أسس وباع 3 شركات، عارف الخروج الصح.",
+    photo: "https://ui-avatars.com/api/?name=Tarek+Nour&background=7c3aed&color=fff",
+    style: "نصيحة"
+  },
+  {
+    name: "ريما السبيعي (AI)",
+    type: "shark",
+    role: "مستثمرة ملاك",
+    location: "قطر",
+    bio: "بتستثمر في الستارت أب التقني، عينها على السوق كله.",
+    photo: "https://ui-avatars.com/api/?name=Reema+Alsubaie&background=db2777&color=fff",
+    style: "تشجيع"
+  },
+  {
+    name: "جاسم الخالدي (AI)",
+    type: "shark",
+    role: "خبير امتياز تجاري",
+    location: "الكويت",
+    bio: "بيحول العلامات التجارية لسلاسل ناجحة.",
+    photo: "https://ui-avatars.com/api/?name=Jassim+Alkhaled&background=0f172a&color=fff",
+    style: "تسويق"
+  },
+  {
+    name: "منال القصبي (AI)",
+    type: "shark",
+    role: "مستثمرة أثرية",
+    location: "مصر",
+    bio: "بتستثمر في المشاريع اللي ليها تأثير اجتماعي.",
+    photo: "https://ui-avatars.com/api/?name=Manal+Elkasby&background=047857&color=fff",
+    style: "تحفيز"
+  }
 ];
 
-// 4. دالة توليد المحتوى الذكية
-async function generateAIPost(character) {
-    const url = "https://api.groq.com/openai/v1/chat/completions";
-    
-    // برومبت مخصص يمنع "الهبل" الجغرافي
-    const prompt = `
-    أنت الآن الشخصية التالية: ${character.name}
-    موقعك الجغرافي: ${character.location}
-    استثماراتك الحقيقية: ${character.investments}
-    أسلوبك: ${character.bio}
+// ---------- توليد المنشور بالـ AI ----------
+async function generateAIPost(user) {
+  const url = "https://api.groq.com/openai/v1/chat/completions";
 
-    المهمة: اكتب بوست "حراق" بالعامية المصرية (بما أنك تنشره على تطبيق مصري للبيزنس) ولكن التزم بخلفيتك الجغرافية واستثماراتك.
-    
-    القواعد:
-    1. إذا كنت شخصية عالمية (مثل ماسك أو كيوبان)، لا تتحدث عن شوارع مصر أو مشاكل محلية مصرية، تحدث عن السوق العالمي بلهجة مصرية مودرن (لغة الشباب المثقف).
-    2. استخدم خبرتك في استثماراتك المذكورة (مثلاً السويدي يتحدث عن المصانع، ماسك عن التكنولوجيا، ساويرس عن الذهب/العقارات).
-    3. ابدأ بـ Hook قوي عن "البيزنس" أو "النجاح".
-    4. ممنوع تمدح Sharkup، اذكره كمنصة للنقاش فقط.
-    5. الخاتمة سؤال يخص الموضوع.
-    6. ممنوع كلمات البوتات (ختاماً، إليكم، إلخ).
-    `;
+  const systemRole = user.type === "shark"
+    ? "أنت مستثمر خبير وقوي (Shark). تقدم نصائح مالية بطريقة صارمة ومباشرة."
+    : "أنت رائد أعمال طموح يحاول بناء مشروعه. تشارك تجاربك وتطلب نصائح من القروش.";
 
-    const payload = {
-        model: MODEL_NAME,
-        messages: [
-            { 
-                role: "system", 
-                content: `أنت خبير في تقمص شخصيات المستثمرين. إذا كانت الشخصية أجنبية، تتحدث بلهجة "عربيزي" أو عامية مصرية راقية جداً (White Slang) ولا تتدخل في الشؤون المحلية المصرية.` 
-            },
-            { role: "user", content: prompt }
-        ],
-        temperature: 0.85
-    };
+  const prompt = `
+  أنت الآن: ${user.name}، ${user.role} من ${user.location}.
+  شخصيتك: ${user.bio}
 
-    const response = await fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${GROQ_API_KEY}`
-        },
-        body: JSON.stringify(payload)
+  اكتب منشوراً بالعامية المصرية أو العربية البيضاء (حسب بلدك) لتطبيق Sharkup.
+  نوع المنشور: ${user.style || "نصيحة"}
+
+  متطلبات الكتابة:
+  - المنشور لا يقل عن 150 كلمة.
+  - استخدم لغة بسيطة ومباشرة.
+  - أضف سؤالاً تفاعلياً في النهاية (مثال: "إيه رأيكم؟"، "حد جرب؟").
+  - أضف هاشتاغين أو ثلاثة في السطر الأخير (مثل #استثمار #ريادة_أعمال #sharkup).
+  - لا تستخدم إيموجي أكثر من مرتين.
+  `;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: systemRole },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.85,
+      max_tokens: 600
+    })
+  });
+
+  const data = await response.json();
+  if (!data.choices) {
+    throw new Error(`Groq API Error: ${JSON.stringify(data)}`);
+  }
+  return data.choices[0].message.content;
+}
+
+// ---------- النشر في Firestore ----------
+async function run() {
+  try {
+    const user = characters[Math.floor(Math.random() * characters.length)];
+    console.log(`⏳ جاري إنشاء منشور من ${user.name}...`);
+    const content = await generateAIPost(user);
+
+    await db.collection("posts").add({
+      content,
+      authorName: user.name,
+      authorPhoto: user.photo,
+      authorRole: user.role,
+      isShark: user.type === "shark",
+      ai: true,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message);
-    return data.choices[0].message.content;
+    console.log(`✅ تم النشر بواسطة ${user.name}`);
+  } catch (e) {
+    console.error("❌ فشل التشغيل:", e);
+  }
 }
 
-// 5. الدالة الأساسية
-async function run() {
-    console.log("🚀 بدء تشغيل بوت Sharkup (Expert Intelligence Mode)...");
-    try {
-        const character = characters[Math.floor(Math.random() * characters.length)];
-        console.log(`👤 الشخصية المختارة: ${character.name}`);
-
-        const aiContent = await generateAIPost(character);
-        
-        await db.collection("posts").add({
-            content: aiContent,
-            authorName: character.name,
-            authorPhoto: character.photo,
-            authorRole: character.role,
-            type: "post",
-            ai: true,
-            supportCount: 0,
-            opposeCount: 0,
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-
-        console.log(`🎉 تم النشر بنجاح بلسان: ${character.name}`);
-    } catch (error) {
-        console.error("💥 خطأ:", error.message);
-        process.exit(1);
-    }
-}
-
-run().then(() => process.exit(0));
+// 🚀 تنفيذ
+run();
