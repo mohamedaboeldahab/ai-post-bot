@@ -2,204 +2,132 @@ import admin from "firebase-admin";
 
 // ================= 🔐 Firebase =================
 const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
-
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
+  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 }
-
 const db = admin.firestore();
 
-// ================= 👥 شخصيات مصرية واقعية جداً =================
+// ================= 📊 أخبار البورصة والطروحات (تحدث يدوياً أو بـ API) =================
+const dailyMarketNews = [
+  "أداء قوي للأسهم القيادية في البورصة المصرية النهاردة ومؤشر EGX30 بيكسر مستويات تاريخية.",
+  "كلام كتير عن طروحات حكومية جديدة قادمة في قطاع البنوك والطاقة (بنك القاهرة، صافي).",
+  "زيادة إقبال المستثمرين العرب على أسهم العقارات المصرية بسبب صفقات رأس الحكمة وتطوير الساحل.",
+  "توقعات بارتفاع أسهم قطاع الأسمدة والبتروكيماويات بسبب الطلب العالمي."
+];
+
+// ================= 👥 الشخصيات المحدثة (خبراء ومستثمرين) =================
 const characters = [
   {
     name: "أحمد الجوهري",
-    role: "مستشار استثمار",
-    gender: "male",
-    mindset: "بيفكر بالأرقام والعائد قبل أي حاجة",
-    tone: "هادئ - مختصر - عقلاني",
-    photo: "https://randomuser.me/api/portraits/men/32.jpg",
+    role: "محلل مالي وبورصة",
+    mindset: "بيحلل الأسهم بالورقة والقلم وبيدور على الـ Undervalued stocks",
+    tone: "محترف - تقني - بيحب لغة الأرقام",
     type: "shark",
-    dialect: "مصري راقي",
+    dialect: "مصري مودرن (لغة مستثمرين)"
   },
   {
     name: "سامي الحديدي",
-    role: "رجل صناعة",
-    gender: "male",
-    mindset: "بيفكر في الإنتاج والتشغيل",
-    tone: "عملي ومباشر",
-    photo: "https://randomuser.me/api/portraits/men/11.jpg",
+    role: "مستثمر صناعي",
+    mindset: "بيحب الاستثمار في الأصول الملموسة والمصانع والأسهم الصناعية",
+    tone: "عملي - بيكره المخاطرة العالية",
     type: "shark",
-    dialect: "مصري شعبي شوية",
+    dialect: "مصري بيزنس تقيل"
   },
   {
-    name: "هالة منصور",
-    role: "خبيرة براندنج",
-    gender: "female",
-    mindset: "بتفكر في الشكل والهوية",
-    tone: "هادية ومنظمة",
-    photo: "https://randomuser.me/api/portraits/women/24.jpg",
-    type: "shark",
-    dialect: "مصري ناعم ومؤدب",
-  },
-  {
-    name: "محمد علي",
-    role: "مطور تطبيقات",
-    gender: "male",
-    mindset: "بيحل المشاكل بالتكنولوجيا",
-    tone: "تحليلي بسيط",
-    photo: "https://randomuser.me/api/portraits/men/7.jpg",
+    name: "ليلى فريد",
+    role: "مخططة مالية للأفراد",
+    mindset: "بتعلم الشباب إزاي يبدأوا استثمار بـ 1000 جنيه في صناديق الاستثمار",
+    tone: "تعليمي - مشجع - بسيط",
     type: "builder",
-    dialect: "مصري بسيط",
+    dialect: "عامية مصرية راقية"
   },
   {
-    name: "سارة مصطفى",
-    role: "مصممة جرافيك",
-    gender: "female",
-    mindset: "بتحكي تجارب وبتتعلم من السوق",
-    tone: "قصصي طبيعي",
-    photo: "https://randomuser.me/api/portraits/women/22.jpg",
+    name: "كريم يحيى",
+    role: "متداول يومي (Day Trader)",
+    mindset: "بيجري ورا التريندات في البورصة وبيدور على الربح السريع",
+    tone: "متحمس - بيحب المخاطرة",
     type: "builder",
-    dialect: "مصري بناتي عفوي",
-  },
-  {
-    name: "كريم أحمد",
-    role: "صاحب مشروع صغير",
-    gender: "male",
-    mindset: "بيعافر في السوق",
-    tone: "عفوي وبسيط",
-    photo: "https://randomuser.me/api/portraits/men/6.jpg",
-    type: "builder",
-    dialect: "مصري شعبي",
-  },
+    dialect: "لغة شباب البورصة"
+  }
 ];
 
-// ================= 🧠 مواضيع مصرية =================
-const topics = [
-  "إزاي تجيب أول عميل؟",
-  "هل أسيب شغلي وأبدأ مشروع؟",
-  "التسعير في السوق المصري",
-  "الاستيراد ولا التصنيع المحلي؟",
-  "الشراكة: ميزة ولا قنبلة موقوتة؟",
-  "التعامل مع الحرفيين والصنايعية",
-  "إزاي تسوق للناس اللي مش بتقرأ؟",
+// ================= 🧠 مواضيع الاستثمار والتعليم =================
+const investmentTopics = [
+  "أسهل طريقة تبدأ بيها استثمار في البورصة المصرية من الموبايل.",
+  "إزاي تبني محفظة استثمارية متنوعة (ذهب، أسهم، عقار).",
+  "يعني إيه 'طروحات أولية' وإزاي نكسب منها؟",
+  "تحليل لسهم معين في قطاع العقارات بعد أخبار النهاردة.",
+  "إزاي تستثمر في الأسهم اللي بتوزع أرباح (Dividends) عشان تعمل دخل سلبي.",
+  "الفرق بين الادخار والاستثمار.. ليه شايل فلوسك في البنك؟"
 ];
 
-// ================= 🔁 اختيار موضوع =================
-function getTopic() {
-  return topics[Math.floor(Math.random() * topics.length)];
-}
-
-// ================= 🤖 توليد بوست طبيعي (مصري خالص) =================
-async function generatePostContent(user) {
-  const topic = getTopic();
-  const isFemale = user.gender === 'female';
+// ================= 🤖 توليد البوست الذكي =================
+async function generateInvestmentPost(user) {
+  const news = dailyMarketNews[Math.floor(Math.random() * dailyMarketNews.length)];
+  const topic = investmentTopics[Math.floor(Math.random() * investmentTopics.length)];
 
   const prompt = `أنت ${user.name}، ${user.role}. ${user.mindset}. أسلوبك: ${user.tone}. نبرتك: ${user.dialect}.
 
-الموضوع: "${topic}"
+المهمة: اكتب بوست لتطبيق Sharkup.
+السياق العام: فيه أخبار النهاردة بتقول: "${news}".
+الموضوع الأساسي للبوست: "${topic}".
 
-**تعليمات صارمة لكتابة البوست:**
-1.  **اكتب مباشرة، لا تبدأ باسمك أو "فلان:" أبداً.**
-2.  اكتب من ٥ إلى ٨ أسطر بالعامية المصرية الأصيلة، كأنك بتتكلم مع أصحابك.
-3.  ممنوع أي كلمة إنجليزية أو صينية. الكلمات الأجنبية المتداولة تكتب بالعربي (زي "براندنج").
-4.  في النهاية اسأل سؤال بسيط للتفاعل.
-5.  **مهم جداً**: خاطب الجمهور بصيغة المؤنث ("أنتِ"، "جربتي"، "شايفة") لو كنتِ ست، وبصيغة المذكر ("أنت"، "جربت"، "شايف") لو كنت راجل. خليك طبيعي في الخطاب ده.`;
+تعليمات الكتابة:
+1. ادمج خبر البورصة النهاردة مع موضوع الاستثمار اللي اخترناه بشكل طبيعي.
+2. اتكلم عن "الأسهم المصرية" أو "الطروحات الجديدة" كأنك متابع السوق لحظة بلحظة.
+3. لو أنت شارك (Shark): انصح الشباب بالاستثمار طويل الأجل أو علق على الطروحات الحكومية.
+4. لو أنت باني (Builder): احكي إنك بدأت تستثمر أو بتسأل عن سهم معين.
+5. اللغة: عامية مصرية (Business Slang). ممنوع الإنجليزي (إلا لو مصطلحات زي Stocks، Portfolio تتكتب بالعربي).
+6. النهاية: لازم سؤال تفاعلي (مثلاً: "ناويين تدخلوا في الطروحات الجديدة؟" أو "إيه أحسن سهم في محفظتكم؟").`;
 
-  const res = await fetch(
-    "https://api.groq.com/openai/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          {
-            role: "system",
-            content: `أنت شخص مصري حقيقي على فيسبوك. بتكتب بوستات بالعامية المصرية مباشرة بدون ذكر اسمك في البداية. ${isFemale ? 'أنتِ امرأة وتخاطبين النساء بشكل طبيعي.' : 'أنت رجل وتخاطب الجمهور بشكل طبيعي.'}`
-          },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.6,
-        max_tokens: 300
-      }),
-    }
-  );
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { 
+          role: "system", 
+          content: "أنت خبير استثمار مصري. بتكتب بوستات تفاعلية عن البورصة المصرية والبيزنس لجمهور تطبيق Sharkup." 
+        },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.7,
+    }),
+  });
 
   const data = await res.json();
   let content = data.choices?.[0]?.message?.content || "";
-
-  // --- تنظيف متقدم ---
-  // إزالة اسم الشخصية متبوعًا بنقطتين في بداية النص (مثل "سارة مصطفى:")
-  content = content.replace(/^[\p{L}\s]+?\s*:\s*/u, '');
-  // إزالة أي أحرف إنجليزية
-  content = content.replace(/[a-zA-Z]+/g, (match) => {
-    const translations = {
-      'Branding': 'براندنج', 'Marketing': 'تسويق', 'Startup': 'شركة ناشئة',
-      'Business': 'بيزنس', 'CEO': 'مدير', 'AI': 'ذكاء اصطناعي',
-    };
-    return translations[match] || '';
-  });
-  // إزالة أي رموز صينية أو غريبة
-  content = content.replace(/[\u4e00-\u9fff\u3400-\u4dbf]+/g, '');
-  // إزالة المسافات الزيادة
-  content = content.replace(/\s+/g, ' ').trim();
-
-  return content;
-}
-
-// ================= 🛑 fallback طبيعي =================
-function fallback(user) {
-  const topic = getTopic();
-  const isFemale = user.gender === 'female';
-  const pronoun = isFemale ? 'أنتِ' : 'أنت';
-
-  const templates = [
-    `طول النهاردة بفكر في موضوع "${topic}"، بصراحة الموضوع ده شاغل بال ناس كتير. اللي يشوف السوق دلوقتي يلاقي إن فيه فرص كتير بس برضه فيه تحديات. إيه رأيكم؟ حد عنده تجربة في الموضوع ده؟`,
-
-    `حابب أتكلم عن "${topic}"، ده موضوع مهم لأي حد بيفكر يبدأ مشروع. أنا شايف إن الأهم هو إن الواحد يبدأ حتى لو بإمكانيات بسيطة. ${pronoun} إيه رأيك؟`,
-
-    `النهاردة جاي أفكر في "${topic}"، والنبي يا جماعة حد يقولي إزاي الواحد ممكن يتعامل مع الموضوع ده؟ أنا محتار بصراحة.`,
-  ];
-  return templates[Math.floor(Math.random() * templates.length)];
+  
+  // تنظيف النص من أي زوائد (اسم الشخصية، علامات ترقيم زيادة)
+  return content.replace(/^[\p{L}\s]+?\s*:\s*/u, '').trim();
 }
 
 // ================= 🚀 التشغيل =================
 async function run() {
   try {
     const user = characters[Math.floor(Math.random() * characters.length)];
-    console.log(`🧠 بيولد بوست لـ ${user.name}...`);
-
-    let content;
-    try {
-      content = await generatePostContent(user);
-      if (content.length < 30) throw new Error("Short content");
-    } catch (e) {
-      console.log("⚠️ AI فشل، سيتم استخدام النص الاحتياطي");
-      content = fallback(user);
-    }
+    const postContent = await generateInvestmentPost(user);
 
     await db.collection("posts").add({
-      content: content.trim(),
+      content: postContent,
       authorName: user.name,
       authorRole: user.role,
-      authorPhoto: user.photo,
-      gender: user.gender,
+      authorPhoto: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`,
       type: user.type,
+      category: "Investment", // تصنيف جديد للفلترة في التطبيق
       ai: true,
       supportCount: 0,
       opposeCount: 0,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    console.log(`✅ تم نشر بوست مصري لـ ${user.name}`);
+    console.log(`✅ ${user.name} نشر تحليل عن البورصة والاستثمار.`);
   } catch (err) {
-    console.error("💥 فشل التشغيل:", err.message);
-    setTimeout(() => run(), 5000);
+    console.error("💥 فشل:", err.message);
   }
 }
 
