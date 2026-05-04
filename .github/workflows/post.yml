@@ -2,13 +2,17 @@ name: AI Post Bot
 
 on:
   schedule:
-    - cron: "0 * * * *"  # كل ساعة
-  workflow_dispatch:
+    # سيحاول التشغيل كل ساعة، لكن لاحظ أن GitHub قد يتأخر قليلاً
+    - cron: "0 * * * *" 
+  workflow_dispatch: # للتشغيل اليدوي للتجربة
 
 jobs:
   bot:
     runs-on: ubuntu-latest
-
+    # إضافة صلاحيات الكتابة لضمان عدم وجود قيود على الأكشن
+    permissions:
+      contents: write
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,10 +20,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20 # يفضل إصدار 20 لدعم fetch المستقر تلقائياً
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
+          # إضافة node-fetch للتأكد من عمل fetch في بيئة الـ Action
+          npm install node-fetch 
 
       - name: Run bot
         env:
