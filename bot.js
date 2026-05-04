@@ -45,7 +45,7 @@ const characters = [
 
 // 4. دالة توليد المحتوى
 async function generateAIPost(character) {
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
     const prompt = `
         تقمص شخصية: ${character.name}.
         وظيفتك: ${character.role}.
