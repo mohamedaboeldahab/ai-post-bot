@@ -24,4 +24,5 @@ jobs:
       - name: Run bot
         env:
           FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} # 👈 تأكد إنك ضفت ده في GitHub Secrets
         run: node bot.js
