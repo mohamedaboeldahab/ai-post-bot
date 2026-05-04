@@ -11,7 +11,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// ================= 👥 شخصيات بشرية واقعية =================
+// ================= 👥 شخصيات مصرية واقعية جداً =================
 const characters = [
   {
     name: "أحمد الجوهري",
@@ -21,6 +21,7 @@ const characters = [
     tone: "هادئ - مختصر - عقلاني",
     photo: "https://randomuser.me/api/portraits/men/32.jpg",
     type: "shark",
+    dialect: "مصري راقي",
   },
   {
     name: "سامي الحديدي",
@@ -30,6 +31,7 @@ const characters = [
     tone: "عملي ومباشر",
     photo: "https://randomuser.me/api/portraits/men/11.jpg",
     type: "shark",
+    dialect: "مصري شعبي شوية",
   },
   {
     name: "هالة منصور",
@@ -39,6 +41,7 @@ const characters = [
     tone: "هادية ومنظمة",
     photo: "https://randomuser.me/api/portraits/women/24.jpg",
     type: "shark",
+    dialect: "مصري ناعم ومؤدب",
   },
   {
     name: "محمد علي",
@@ -48,6 +51,7 @@ const characters = [
     tone: "تحليلي بسيط",
     photo: "https://randomuser.me/api/portraits/men/7.jpg",
     type: "builder",
+    dialect: "مصري بسيط",
   },
   {
     name: "سارة مصطفى",
@@ -57,6 +61,7 @@ const characters = [
     tone: "قصصي طبيعي",
     photo: "https://randomuser.me/api/portraits/women/22.jpg",
     type: "builder",
+    dialect: "مصري بناتي عفوي",
   },
   {
     name: "كريم أحمد",
@@ -66,16 +71,19 @@ const characters = [
     tone: "عفوي وبسيط",
     photo: "https://randomuser.me/api/portraits/men/6.jpg",
     type: "builder",
+    dialect: "مصري شعبي",
   },
 ];
 
-// ================= 🧠 مواضيع =================
+// ================= 🧠 مواضيع مصرية =================
 const topics = [
-  "هل الذكاء الاصطناعي هيغير البيزنس في مصر؟",
   "إزاي تجيب أول عميل؟",
   "هل أسيب شغلي وأبدأ مشروع؟",
-  "مشكلة التسعير في السوق",
-  "هل الشراكة فكرة كويسة؟",
+  "التسعير في السوق المصري",
+  "الاستيراد ولا التصنيع المحلي؟",
+  "الشراكة: ميزة ولا قنبلة موقوتة؟",
+  "التعامل مع الحرفيين والصنايعية",
+  "إزاي تسوق للناس اللي مش بتقرأ؟",
 ];
 
 // ================= 🔁 اختيار موضوع =================
@@ -83,28 +91,29 @@ async function getTopic() {
   return topics[Math.floor(Math.random() * topics.length)];
 }
 
-// ================= 🤖 توليد بوست طبيعي =================
+// ================= 🤖 توليد بوست طبيعي (مصري خالص) =================
 async function generatePost(user) {
   const topic = await getTopic();
 
-  const prompt = `
-أنت شخص حقيقي في مصر.
+  const prompt = `أنت شخص حقيقي في مصر، بتتكلم بالعامية المصرية الطبيعية جداً اللي بنستخدمها في الشارع والبيت والشغل.
 
-الاسم: ${user.name}
-الوظيفة: ${user.role}
-طريقة التفكير: ${user.mindset}
-أسلوبك: ${user.tone}
+اسمك: ${user.name}
+شغلك: ${user.role}
+طريقة تفكيرك: ${user.mindset}
+أسلوبك في الكلام: ${user.tone}
+النبرة المطلوبة: ${user.dialect}
 
-الموضوع: ${topic}
+الموضوع اللي هتكلم فيه النهاردة: "${topic}"
 
-اكتب بوست قصير طبيعي جدًا كإنك بتتكلم على فيسبوك.
+عايزين بوست قصير (6-10 أسطر) كأنك بتكتب على فيسبوك.
 
-قواعد:
-- لهجة مصرية بسيطة جدًا
-- بدون مبالغة
-- بدون أي كلمات AI أو فلسفة زيادة
-- لازم سؤال في النهاية
-`;
+قواعد مهمة جداً:
+- **بالعامية المصرية بس**. ممنوع أي كلمة إنجليزية أو صينية أو أي لغة تانية.
+- **ممنوع استخدام أي رموز أو حروف أجنبية خالص**. حتى لو كلمة متداولة زي "Branding" أو "Marketing" اكتبها بالعربي "براندنج" أو "تسويق".
+- خلي كلامك طبيعي جداً، زي ما بتتكلم مع صاحبك في القهوة أو مع زميلتك في الشغل.
+- ${user.gender === 'male' ? 'أنت راجل، كلامك فيه جدية وخبرة.' : 'أنت ست، كلامك فيه حنية وذوق.'}
+- في الآخر اسأل سؤال بسيط عشان الناس تتفاعل معاك.
+- متنساش تكتب اسمك الحقيقي "${user.name.split(' ')[0]}" في أول البوست لو حابب.`;
 
   const res = await fetch(
     "https://api.groq.com/openai/v1/chat/completions",
@@ -119,12 +128,12 @@ async function generatePost(user) {
         messages: [
           {
             role: "system",
-            content:
-              "أنت كاتب مصري طبيعي جدًا بيكتب بوستات سوشيال ميديا واقعية.",
+            content: "أنت مواطن مصري حقيقي، بتتكلم بالعامية المصرية الأصيلة اللي ملهاش علاقة بالإنجليزي ولا الصيني ولا أي لغة تانية. اكتب بوستات فيسبوك واقعية جداً. ممنوع استخدام أي كلمة مش عربية."
           },
           { role: "user", content: prompt },
         ],
-        temperature: user.type === "shark" ? 0.5 : 0.8,
+        temperature: 0.6, // أقل لتجنب الهلوسة
+        max_tokens: 300
       }),
     }
   );
@@ -133,15 +142,24 @@ async function generatePost(user) {
   return data.choices?.[0]?.message?.content;
 }
 
-// ================= 🛑 fallback طبيعي =================
+// ================= 🛑 fallback طبيعي (مصري) =================
 function fallback(user) {
-  const posts = [
-    "التجربة أهم من الكلام في البيزنس",
-    "مش كل فكرة تنفع تتنفذ بسهولة",
-    "السوق محتاج صبر أكتر من الفلوس",
-    "ابدأ صغير وطور مع الوقت",
+  const topic = topics[Math.floor(Math.random() * topics.length)];
+  const intro = user.gender === 'male' ? "أنا" : "أنا";
+  const name = user.name.split(" ")[0];
+
+  const templates = [
+    `${intro} ${name}، ${user.role}. 
+ طول النهاردة بفكر في موضوع "${topic}"، بصراحة الموضوع ده شاغل بال ناس كتير. 
+ اللي يشوف السوق دلوقتي يلاقي إن فيه فرص كتير بس برضه فيه تحديات. 
+ إيه رأيكم؟ حد عنده تجربة في الموضوع ده؟`,
+    
+    `${intro} ${name} من مصر، بشتغل ${user.role}. 
+ حابب أتكلم عن "${topic}"، ده موضوع مهم لأي حد بيفكر يبدأ مشروع. 
+ أنا شايف إن الأهم هو إن الواحد يبدأ حتى لو بإمكانيات بسيطة. 
+ إنتو إيه رأيكم؟`,
   ];
-  return posts[Math.floor(Math.random() * posts.length)];
+  return templates[Math.floor(Math.random() * templates.length)];
 }
 
 // ================= 🚀 التشغيل =================
@@ -155,6 +173,25 @@ async function run() {
 
     try {
       content = await generatePost(user);
+      // تنظيف أي كلمات إنجليزية متبقية
+      content = content.replace(/[a-zA-Z]+/g, (match) => {
+        // لو الكلمة معروفة نترجمها، لو لأ نشيلها
+        const translations = {
+          'Branding': 'براندنج',
+          'Marketing': 'تسويق',
+          'Startup': 'شركة ناشئة',
+          'Business': 'بيزنس',
+          'CEO': 'مدير',
+          'AI': 'ذكاء اصطناعي',
+        };
+        return translations[match] || '';
+      });
+      // إزالة أي رموز صينية أو غريبة
+      content = content.replace(/[\u4e00-\u9fff\u3400-\u4dbf]+/g, '');
+      // إزالة المسافات الزيادة
+      content = content.replace(/\s+/g, ' ').trim();
+      
+      if (content.length < 30) throw new Error("Short content");
     } catch (e) {
       console.log("⚠️ fallback شغال");
       content = fallback(user);
@@ -165,7 +202,7 @@ async function run() {
       authorName: user.name,
       authorRole: user.role,
       authorPhoto: user.photo,
-      mindset: user.mindset,
+      gender: user.gender,
       type: user.type,
       ai: true,
       supportCount: 0,
@@ -173,9 +210,11 @@ async function run() {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    console.log("✅ تم نشر بوست طبيعي:", user.name);
+    console.log("✅ تم نشر بوست مصري:", user.name);
   } catch (err) {
     console.error("💥 Error:", err.message);
+    // إعادة المحاولة مرة واحدة
+    setTimeout(() => run(), 5000);
   }
 }
 
