@@ -7,9 +7,9 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
-// 2. إعدادات Gemini API
-const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL_NAME = "gemini-1.5-flash"; // الموديل المطلوب
+// 2. إعدادات Groq API
+const GROQ_API_KEY = process.env.GROQ_API_KEY; // هتحتاج تجيب Key من Groq (مجاني)
+const MODEL_NAME = "llama-3.3-70b-versatile"; // موديل جبار ومجاني
 
 // 3. قاعدة بيانات الشخصيات
 const characters = [
@@ -19,9 +19,9 @@ const characters = [
     { name: "منى خالد", photo: "https://i.pravatar.cc/150?img=20", role: "مستشارة إدارة أموال", bio: "ودودة، ناصحة، تهتم بالادخار والذكاء المالي الشخصي." }
 ];
 
-// 4. دالة توليد المحتوى باستخدام Fetch مباشرة (لتجنب أخطاء المكتبة)
+// 4. دالة توليد المحتوى باستخدام Groq API
 async function generateAIPost(character) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+    const url = "https://api.groq.com/openai/v1/chat/completions";
     
     const prompt = `أنت الآن ${character.name}، وظيفتك ${character.role}. ${character.bio} 
     اكتب منشور (Post) دسم ومؤثر بالعامية المصرية لتطبيق Sharkup. 
@@ -29,34 +29,38 @@ async function generateAIPost(character) {
     لا تذكر أنك ذكاء اصطناعي. الطول من 70 لـ 150 كلمة.`;
 
     const payload = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 800 }
+        model: MODEL_NAME,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7
     };
 
     const response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GROQ_API_KEY}`
+        },
         body: JSON.stringify(payload)
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-        console.error("❌ تفاصيل خطأ API:", data);
-        throw new Error(`خطأ من جوجل API: ${data.error?.message || response.statusText}`);
+        console.error("❌ تفاصيل خطأ Groq API:", data);
+        throw new Error(`خطأ من Groq: ${data.error?.message || response.statusText}`);
     }
 
-    return data.candidates[0].content.parts[0].text;
+    return data.choices[0].message.content;
 }
 
 // 5. الدالة الأساسية
 async function run() {
-    console.log("🚀 بدء تشغيل بوت Sharkup AI (Direct API Mode)...");
+    console.log("🚀 بدء تشغيل بوت Sharkup AI (Groq API Mode)...");
     try {
         const character = characters[Math.floor(Math.random() * characters.length)];
         console.log(`👤 الشخصية المختارة: ${character.name}`);
 
-        console.log("⏳ جاري طلب المحتوى من Gemini API...");
+        console.log("⏳ جاري طلب المحتوى من Groq API...");
         const aiContent = await generateAIPost(character);
         console.log("✅ تم توليد النص بنجاح.");
 
@@ -73,7 +77,7 @@ async function run() {
             createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        console.log("🎉 تم النشر بنجاح على Sharkup!");
+        console.log("🎉 تم النشر بنجاح على Sharkup باستخدام Groq!");
     } catch (error) {
         console.error("💥 حدث خطأ أثناء التنفيذ:", error.message);
         process.exit(1);
