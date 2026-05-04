@@ -1,95 +1,67 @@
 import admin from "firebase-admin";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // 1. إعدادات Firebase
-// تأكد أن FIREBASE_CONFIG في GitHub Secrets يحتوي على الـ JSON كاملاً
 const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
-
 if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 }
 const db = admin.firestore();
 
-// 2. إعدادات Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// 2. إعدادات Gemini API
+const API_KEY = process.env.GEMINI_API_KEY;
+const MODEL_NAME = "gemini-1.5-flash"; // الموديل المطلوب
 
 // 3. قاعدة بيانات الشخصيات
 const characters = [
-    {
-        name: "أحمد حسن",
-        photo: "https://i.pravatar.cc/150?img=12",
-        role: "خبير استثمار عقاري وبورصة",
-        bio: "شخصية عملية، يحلل الأرقام، أسلوبه هادئ ومقنع، يركز على الفرص طويلة المدى."
-    },
-    {
-        name: "سارة محمد",
-        photo: "https://i.pravatar.cc/150?img=5",
-        role: "رائدة أعمال ولايف كوتش",
-        bio: "أسلوب حماسي، ملهمة، تركز على تطوير الذات وعقلية النجاح وكسر الخوف."
-    },
-    {
-        name: "كريم علي",
-        photo: "https://i.pravatar.cc/150?img=8",
-        role: "مطور مشاريع وتكنولوجيا",
-        bio: "خبير في التسويق الرقمي والستارت اب، أسلوبه سريع، ذكي، ويعطي خطوات تنفيذية."
-    },
-    {
-        name: "منى خالد",
-        photo: "https://i.pravatar.cc/150?img=20",
-        role: "مستشارة إدارة أموال",
-        bio: "تركز على الادخار الشخصي والذكاء المالي، أسلوبها ودود وناصح، تهتم بالتفاصيل."
-    }
+    { name: "أحمد حسن", photo: "https://i.pravatar.cc/150?img=12", role: "خبير استثمار عقاري وبورصة", bio: "عملي، هادئ، يركز على الأرقام والفرص طويلة المدى." },
+    { name: "سارة محمد", photo: "https://i.pravatar.cc/150?img=5", role: "رائدة أعمال ولايف كوتش", bio: "حماسية، ملهمة، تركز على تطوير الذات وعقلية النجاح." },
+    { name: "كريم علي", photo: "https://i.pravatar.cc/150?img=8", role: "مطور مشاريع وتكنولوجيا", bio: "ذكي، سريع، يعطي خطوات تنفيذية في التسويق والستارت اب." },
+    { name: "منى خالد", photo: "https://i.pravatar.cc/150?img=20", role: "مستشارة إدارة أموال", bio: "ودودة، ناصحة، تهتم بالادخار والذكاء المالي الشخصي." }
 ];
 
-// 4. دالة توليد المحتوى
+// 4. دالة توليد المحتوى باستخدام Fetch مباشرة (لتجنب أخطاء المكتبة)
 async function generateAIPost(character) {
-    // استخدمنا "gemini-1.5-flash-latest" بدلاً من الاسم القديم
-    // ده بيجبر الـ SDK يروح لأحدث نسخة مستقرة وموجودة فعلاً
-    const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash-latest" 
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+    
+    const prompt = `أنت الآن ${character.name}، وظيفتك ${character.role}. ${character.bio} 
+    اكتب منشور (Post) دسم ومؤثر بالعامية المصرية لتطبيق Sharkup. 
+    يجب أن يتضمن المنشور نصيحة حقيقية وسؤال تفاعلي في النهاية. 
+    لا تذكر أنك ذكاء اصطناعي. الطول من 70 لـ 150 كلمة.`;
+
+    const payload = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 800 }
+    };
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
     });
 
-    const prompt = `اكتب بوست بالعامية المصرية لشخصية اسمها ${character.name} بتشتغل ${character.role}. 
-    الموضوع عن: ${character.bio}. 
-    لازم البوست يكون دسم ومفيد لجمهور تطبيق Sharkup وفي نهايته سؤال.`;
+    const data = await response.json();
 
-    try {
-        // إضافة إعدادات إضافية لضمان عدم رفض الطلب
-        const result = await model.generateContent({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: {
-                maxOutputTokens: 500,
-                temperature: 0.7,
-            },
-        });
-        
-        const response = await result.response;
-        return response.text();
-    } catch (error) {
-        console.error("❌ تفاصيل الخطأ كاملة:");
-        console.dir(error, { depth: null });
-        throw new Error("فشل توليد النص: " + error.message);
+    if (!response.ok) {
+        console.error("❌ تفاصيل خطأ API:", data);
+        throw new Error(`خطأ من جوجل API: ${data.error?.message || response.statusText}`);
     }
+
+    return data.candidates[0].content.parts[0].text;
 }
-// 5. الدالة الأساسية للنشر
+
+// 5. الدالة الأساسية
 async function run() {
-    console.log("🚀 بدء تشغيل بوت Sharkup AI...");
-    
+    console.log("🚀 بدء تشغيل بوت Sharkup AI (Direct API Mode)...");
     try {
-        // اختيار شخصية عشوائية
         const character = characters[Math.floor(Math.random() * characters.length)];
         console.log(`👤 الشخصية المختارة: ${character.name}`);
 
-        // توليد النص
-        console.log("⏳ جاري استشارة Gemini AI لتوليد المحتوى...");
+        console.log("⏳ جاري طلب المحتوى من Gemini API...");
         const aiContent = await generateAIPost(character);
-        console.log("📝 النص المولد (أول 50 حرف): " + aiContent.substring(0, 50) + "...");
+        console.log("✅ تم توليد النص بنجاح.");
 
-        // الرفع لـ Firestore
-        console.log("📡 جاري الرفع إلى قاعدة بيانات Firestore...");
-        const docRef = await db.collection("posts").add({
+        console.log("📡 جاري الرفع إلى Firestore...");
+        await db.collection("posts").add({
             content: aiContent,
             authorName: character.name,
             authorPhoto: character.photo,
@@ -101,23 +73,11 @@ async function run() {
             createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        console.log(`✅ تم النشر بنجاح! معرف المستند: ${docRef.id}`);
-        return true;
-
+        console.log("🎉 تم النشر بنجاح على Sharkup!");
     } catch (error) {
-        console.error("❌ حدث خطأ أثناء تنفيذ المهمة:");
-        console.error(error.message);
-        throw error; // نمرر الخطأ عشان الدالة تحت تمسكه
+        console.error("💥 حدث خطأ أثناء التنفيذ:", error.message);
+        process.exit(1);
     }
 }
 
-// 6. تشغيل البوت مع ضمان إغلاق العملية بشكل صحيح
-run()
-    .then(() => {
-        console.log("🏁 العملية انتهت بالكامل بنجاح.");
-        process.exit(0);
-    })
-    .catch((err) => {
-        console.error("💥 فشل نهائي في البوت:", err);
-        process.exit(1);
-    });
+run().then(() => process.exit(0));
