@@ -5,161 +5,141 @@ const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
 
 if (!admin.apps.length) {
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: admin.credential.cert(serviceAccount),
   });
 }
 
 const db = admin.firestore();
 
-// ================= 👥 الشخصيات =================
+// ================= 👥 شخصيات بشرية واقعية =================
 const characters = [
-  // 🦈 Sharks (مستشارين)
   {
     name: "أحمد الجوهري",
-    role: "مستشار أعمال",
-    bio: "بيفكر بمنطق الأرقام والاستثمار طويل المدى",
-    type: "shark"
+    role: "مستشار استثمار",
+    gender: "male",
+    mindset: "بيفكر بالأرقام والعائد قبل أي حاجة",
+    tone: "هادئ - مختصر - عقلاني",
+    photo: "https://randomuser.me/api/portraits/men/32.jpg",
+    type: "shark",
   },
   {
     name: "سامي الحديدي",
     role: "رجل صناعة",
-    bio: "خبير مصانع وتوسعات إنتاج",
-    type: "shark"
+    gender: "male",
+    mindset: "بيفكر في الإنتاج والتشغيل",
+    tone: "عملي ومباشر",
+    photo: "https://randomuser.me/api/portraits/men/11.jpg",
+    type: "shark",
   },
   {
     name: "هالة منصور",
     role: "خبيرة براندنج",
-    bio: "بتحب المشاريع المنظمة والبراند القوي",
-    type: "shark"
-  },
-  {
-    name: "عادل فوزي",
-    role: "محلل مالي",
-    bio: "كل قراراته مبنية على أرقام وتحليل",
-    type: "shark"
-  },
-
-  // 💼 Entrepreneurs
-  {
-    name: "كريم أحمد",
-    role: "صاحب مشروع أكل",
-    bio: "بيحاول يكبر مشروعه في السوق",
-    type: "contestant"
-  },
-  {
-    name: "سارة مصطفى",
-    role: "مصممة جرافيك",
-    bio: "فريلانس وبتتعامل مع عملاء صعبين",
-    type: "contestant"
+    gender: "female",
+    mindset: "بتفكر في الشكل والهوية",
+    tone: "هادية ومنظمة",
+    photo: "https://randomuser.me/api/portraits/women/24.jpg",
+    type: "shark",
   },
   {
     name: "محمد علي",
     role: "مطور تطبيقات",
-    bio: "بيعمل مشاريع تقنية وبيحاول ينجح",
-    type: "contestant"
+    gender: "male",
+    mindset: "بيحل المشاكل بالتكنولوجيا",
+    tone: "تحليلي بسيط",
+    photo: "https://randomuser.me/api/portraits/men/7.jpg",
+    type: "builder",
   },
   {
-    name: "مريم خالد",
-    role: "صاحبة متجر أونلاين",
-    bio: "عندها مشاكل شحن ومنافسة",
-    type: "contestant"
+    name: "سارة مصطفى",
+    role: "مصممة جرافيك",
+    gender: "female",
+    mindset: "بتحكي تجارب وبتتعلم من السوق",
+    tone: "قصصي طبيعي",
+    photo: "https://randomuser.me/api/portraits/women/22.jpg",
+    type: "builder",
   },
   {
-    name: "يوسف سامي",
-    role: "متداول كريبتو",
-    bio: "بيتكلم عن المخاطرة والاستثمار",
-    type: "contestant"
+    name: "كريم أحمد",
+    role: "صاحب مشروع صغير",
+    gender: "male",
+    mindset: "بيعافر في السوق",
+    tone: "عفوي وبسيط",
+    photo: "https://randomuser.me/api/portraits/men/6.jpg",
+    type: "builder",
   },
-  {
-    name: "دنيا إبراهيم",
-    role: "مسوقة رقمية",
-    bio: "بتفهم في السوشيال ميديا والترندات",
-    type: "contestant"
-  }
 ];
 
 // ================= 🧠 مواضيع =================
 const topics = [
-  "خسرت أول مشروع ليا",
-  "هل الاستثمار في العقارات مفيد؟",
-  "مشكلة الشحن والتوصيل",
-  "إزاي أجيب أول عميل؟",
-  "هل أسيب شغلي وأبدأ بيزنس؟",
-  "تسعير المنتجات",
-  "الذكاء الاصطناعي في البيزنس",
-  "المنافسة في السوق",
-  "الشراكة في المشاريع",
-  "إدارة الفلوس"
+  "هل الذكاء الاصطناعي هيغير البيزنس في مصر؟",
+  "إزاي تجيب أول عميل؟",
+  "هل أسيب شغلي وأبدأ مشروع؟",
+  "مشكلة التسعير في السوق",
+  "هل الشراكة فكرة كويسة؟",
 ];
 
-// ================= 🔁 منع التكرار =================
-const metaRef = db.collection("meta").doc("topics");
-
+// ================= 🔁 اختيار موضوع =================
 async function getTopic() {
-  const snap = await metaRef.get();
-  let used = snap.exists ? snap.data().used || [] : [];
-
-  const available = topics.filter(t => !used.includes(t));
-  const topic =
-    available.length > 0
-      ? available[Math.floor(Math.random() * available.length)]
-      : topics[Math.floor(Math.random() * topics.length)];
-
-  await metaRef.set({
-    used: [...used.slice(-15), topic]
-  });
-
-  return topic;
+  return topics[Math.floor(Math.random() * topics.length)];
 }
 
-// ================= 🤖 AI =================
+// ================= 🤖 توليد بوست طبيعي =================
 async function generatePost(user) {
   const topic = await getTopic();
 
   const prompt = `
-أنت شخص مصري اسمه ${user.name}.
-وظيفتك: ${user.role}
-خلفيتك: ${user.bio}
+أنت شخص حقيقي في مصر.
 
-اكتب بوست عن: ${topic}
+الاسم: ${user.name}
+الوظيفة: ${user.role}
+طريقة التفكير: ${user.mindset}
+أسلوبك: ${user.tone}
 
-القواعد:
-- لهجة مصرية طبيعية 100%
-- ممنوع الفصحى
-- خليك واقعي
-- شارك أو مستثمر: كلامك تقيل ومختصر
-- عادي: احكي موقف أو مشكلة
+الموضوع: ${topic}
+
+اكتب بوست قصير طبيعي جدًا كإنك بتتكلم على فيسبوك.
+
+قواعد:
+- لهجة مصرية بسيطة جدًا
+- بدون مبالغة
+- بدون أي كلمات AI أو فلسفة زيادة
 - لازم سؤال في النهاية
-- استخدم تعبيرات زي: لبست في الحيط، الزتونة، عك، سوق
 `;
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: "مصري بيكتب بوستات بيزنس طبيعية جدًا." },
-        { role: "user", content: prompt }
-      ],
-      temperature: user.type === "shark" ? 0.6 : 0.95
-    })
-  });
+  const res = await fetch(
+    "https://api.groq.com/openai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content:
+              "أنت كاتب مصري طبيعي جدًا بيكتب بوستات سوشيال ميديا واقعية.",
+          },
+          { role: "user", content: prompt },
+        ],
+        temperature: user.type === "shark" ? 0.5 : 0.8,
+      }),
+    }
+  );
 
   const data = await res.json();
   return data.choices?.[0]?.message?.content;
 }
 
-// ================= 🛡️ fallback =================
+// ================= 🛑 fallback طبيعي =================
 function fallback(user) {
   const posts = [
-    "حد جرب يخسر في مشروع ويرجع يقف تاني؟",
-    "أنا لبست في الحيط قبل كده في بيزنس 😅",
-    "أهم حاجة تبدأ حتى لو مش جاهز",
-    "السوق صعب بس فيه فرص حقيقية"
+    "التجربة أهم من الكلام في البيزنس",
+    "مش كل فكرة تنفع تتنفذ بسهولة",
+    "السوق محتاج صبر أكتر من الفلوس",
+    "ابدأ صغير وطور مع الوقت",
   ];
   return posts[Math.floor(Math.random() * posts.length)];
 }
@@ -184,18 +164,18 @@ async function run() {
       content: content.trim(),
       authorName: user.name,
       authorRole: user.role,
-      authorPhoto: `https://i.pravatar.cc/150?u=${encodeURIComponent(user.name)}`,
-      isShark: user.type === "shark",
+      authorPhoto: user.photo,
+      mindset: user.mindset,
+      type: user.type,
       ai: true,
       supportCount: 0,
       opposeCount: 0,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    console.log("✅ تم نشر بوست:", user.name);
-
+    console.log("✅ تم نشر بوست طبيعي:", user.name);
   } catch (err) {
-    console.error("💥 خطأ:", err.message);
+    console.error("💥 Error:", err.message);
   }
 }
 
