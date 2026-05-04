@@ -45,25 +45,37 @@ const characters = [
 
 // 4. دالة توليد المحتوى
 async function generateAIPost(character) {
-const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
-    const prompt = `
-        تقمص شخصية: ${character.name}.
-        وظيفتك: ${character.role}.
-        خلفيتك: ${character.bio}.
-        المطلوب: اكتب منشور (Post) دسم ومؤثر لتطبيق "Sharkup" بالعامية المصرية المثقفة.
-        - ابدأ بمقدمة قوية تخطف العين.
-        - قدم نصيحة أو معلومة قيمة في صلب تخصصك.
-        - استخدم إيموجي مناسبة.
-        - اختم المنشور بسؤال تفاعلي للجمهور.
-        - طول المنشور: بين 70 و 150 كلمة.
-        - لا تذكر أنك ذكاء اصطناعي، اكتب كبشري حقيقي.
-    `;
-
+    // حاولنا نستخدم الموديل السريع، ولو فشل هنستخدم البرو المستقر
+    let modelName = "gemini-1.5-flash"; 
+    
     try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+
+        const prompt = `
+            تقمص شخصية: ${character.name}.
+            وظيفتك: ${character.role}.
+            خلفيتك: ${character.bio}.
+            المطلوب: اكتب منشور (Post) دسم ومؤثر لتطبيق "Sharkup" بالعامية المصرية المثقفة.
+            - ابدأ بمقدمة قوية تخطف العين.
+            - قدم نصيحة أو معلومة قيمة في صلب تخصصك.
+            - استخدم إيموجي مناسبة.
+            - اختم المنشور بسؤال تفاعلي للجمهور.
+            - طول المنشور: بين 70 و 150 كلمة.
+            - لا تذكر أنك ذكاء اصطناعي، اكتب كبشري حقيقي.
+        `;
+
         const result = await model.generateContent(prompt);
         const response = await result.response;
         return response.text();
     } catch (error) {
+        // لو الخطأ 404، جرب نستخدم gemini-pro كخطة بديلة
+        if (error.message.includes("404") || error.message.includes("not found")) {
+            console.log("⚠️ موديل Flash غير متاح، جاري المحاولة باستخدام gemini-pro...");
+            const fallbackModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+            const result = await fallbackModel.generateContent("اكتب بوست عن الاستثمار بالعامية المصرية");
+            const response = await result.response;
+            return response.text();
+        }
         throw new Error("فشل توليد النص من Gemini: " + error.message);
     }
 }
