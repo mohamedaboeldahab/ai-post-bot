@@ -45,28 +45,31 @@ const characters = [
 
 // 4. دالة توليد المحتوى
 async function generateAIPost(character) {
-    // استخدمنا المسار الكامل للموديل لضمان عدم حدوث 404
-    const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
+    // استخدمنا "gemini-1.5-flash-latest" بدلاً من الاسم القديم
+    // ده بيجبر الـ SDK يروح لأحدث نسخة مستقرة وموجودة فعلاً
+    const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash-latest" 
+    });
 
-    const prompt = `
-        تقمص شخصية: ${character.name}.
-        وظيفتك: ${character.role}.
-        خلفيتك: ${character.bio}.
-        المطلوب: اكتب منشور (Post) دسم ومؤثر لتطبيق "Sharkup" بالعامية المصرية المثقفة.
-        - ابدأ بمقدمة قوية تخطف العين.
-        - قدم نصيحة أو معلومة قيمة في صلب تخصصك.
-        - استخدم إيموجي مناسبة.
-        - اختم المنشور بسؤال تفاعلي للجمهور.
-        - طول المنشور: بين 70 و 150 كلمة.
-        - لا تذكر أنك ذكاء اصطناعي، اكتب كبشري حقيقي.
-    `;
+    const prompt = `اكتب بوست بالعامية المصرية لشخصية اسمها ${character.name} بتشتغل ${character.role}. 
+    الموضوع عن: ${character.bio}. 
+    لازم البوست يكون دسم ومفيد لجمهور تطبيق Sharkup وفي نهايته سؤال.`;
 
     try {
-        const result = await model.generateContent(prompt);
+        // إضافة إعدادات إضافية لضمان عدم رفض الطلب
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
+                maxOutputTokens: 500,
+                temperature: 0.7,
+            },
+        });
+        
         const response = await result.response;
         return response.text();
     } catch (error) {
-        console.error("❌ تفاصيل خطأ Gemini:", error);
+        console.error("❌ تفاصيل الخطأ كاملة:");
+        console.dir(error, { depth: null });
         throw new Error("فشل توليد النص: " + error.message);
     }
 }
