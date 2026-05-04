@@ -1,92 +1,81 @@
 import admin from "firebase-admin";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// 🔐 Firebase config من GitHub Secrets
+// 1. إعدادات Firebase
 const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-
+if (!admin.apps.length) {
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+}
 const db = admin.firestore();
 
-// 👤 شخصيات (بصور حقيقية)
+// 2. إعدادات الذكاء الاصطناعي (Gemini)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// 3. تطوير الشخصيات بـ "بروفايل نفسي" (System Instructions)
 const characters = [
   {
     name: "أحمد حسن",
     photo: "https://i.pravatar.cc/150?img=12",
-    style: "استثمار"
+    role: "خبير استثمار عقاري وبورصة",
+    bio: "بيتكلم بلغة الأرقام، أسلوبه هادي وعملي، بيحب يحلل الفرص السوقية."
   },
   {
     name: "سارة محمد",
     photo: "https://i.pravatar.cc/150?img=5",
-    style: "تحفيز"
+    role: "لايف كوتش ورائدة أعمال",
+    bio: "أسلوبها حماسي جداً، بتركز على عقلية النجاح (Mindset) وازاي تتغلب على الخوف."
   },
   {
     name: "كريم علي",
     photo: "https://i.pravatar.cc/150?img=8",
-    style: "مشاريع"
+    role: "مطور مشاريع ناشئة (Startups)",
+    bio: "بيحب الكلام في التكنولوجيا والتسويق، أسلوبه سريع ومباشر وبيدي خطوات عملية."
   },
   {
     name: "منى خالد",
     photo: "https://i.pravatar.cc/150?img=20",
-    style: "مال"
+    role: "مستشارة إدارة أموال شخصية",
+    bio: "بتركز على الادخار والذكاء المالي، أسلوبها زي الأخت الكبيرة اللي بتخاف على مصلحتك."
   }
 ];
 
-// 💬 توليد بوست حسب الأسلوب
-function generatePost(character) {
-  let posts = [];
+// 4. دالة توليد المحتوى القوي باستخدام AI
+async function generateAIPost(character) {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    // البرومبت (Prompt) اللي هيخلي الـ AI يكتب بوست طويل
+    const prompt = `
+        أنت الآن تلعب دور شخصية في تطبيق "Sharkup".
+        اسمك: ${character.name}.
+        وظيفتك: ${character.role}.
+        خلفيتك: ${character.bio}.
+        
+        المطلوب: اكتب منشور (Post) طويل ومؤثر بالعامية المصرية المثقفة. 
+        - المنشور يجب أن يحتوي على: مقدمة تجذب الانتباه، محتوى تعليمي أو تحفيزي دسم، وخاتمة فيها نصيحة أو سؤال للجمهور.
+        - استخدم الإيموجي بشكل مناسب.
+        - لا تزيد عن 150 كلمة ولا تقل عن 50 كلمة.
+        - ركز على تقديم قيمة حقيقية لمستخدمي تطبيق Sharkup.
+    `;
 
-  if (character.style === "استثمار") {
-    posts = [
-      "استثمر فلوسك بدل ما تسيبها واقفة 📈",
-      "العائد الصغير المستمر أفضل من الكبير المؤقت",
-      "الوقت أهم عنصر في الاستثمار ⏳"
-    ];
-  }
-
-  else if (character.style === "تحفيز") {
-    posts = [
-      "ابدأ دلوقتي… متستناش الظروف 💪",
-      "الفشل خطوة في طريق النجاح 🚀",
-      "كل مشروع كبير بدأ بفكرة صغيرة"
-    ];
-  }
-
-  else if (character.style === "مشاريع") {
-    posts = [
-      "اختار فكرة بسيطة وسوقها صح 💡",
-      "أهم حاجة في المشروع هي التنفيذ مش الفكرة",
-      "اسأل السوق قبل ما تبدأ أي مشروع"
-    ];
-  }
-
-  else if (character.style === "مال") {
-    posts = [
-      "وفر جزء من دخلك كل شهر 💰",
-      "المصاريف الصغيرة هي اللي بتكسر الميزانية",
-      "اعرف فلوسك بتروح فين الأول"
-    ];
-  }
-
-  const text = posts[Math.floor(Math.random() * posts.length)];
-
-  return {
-    content: text,
-    authorName: character.name,
-    authorPhoto: character.photo
-  };
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
 }
 
 async function run() {
   try {
+    // اختيار شخصية عشوائية
     const character = characters[Math.floor(Math.random() * characters.length)];
-    const post = generatePost(character);
+    
+    console.log(`⏳ جاري توليد محتوى لـ ${character.name}...`);
+    const aiContent = await generateAIPost(character);
 
+    // إضافة البوست لقاعدة البيانات
     await db.collection("posts").add({
-      content: post.content,
-      authorName: post.authorName,
-      authorPhoto: post.authorPhoto,
+      content: aiContent,
+      authorName: character.name,
+      authorPhoto: character.photo,
+      authorRole: character.role, // إضافة تخصص الشخصية لإعطاء مصداقية
       type: "post",
       ai: true,
       supportCount: 0,
@@ -94,12 +83,11 @@ async function run() {
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log("✅ تم نشر بوست من:", post.authorName);
+    console.log("✅ تم نشر المنشور الطويل بنجاح!");
 
   } catch (error) {
-    console.error("❌ خطأ:", error);
+    console.error("❌ خطأ في العملية:", error);
   }
 }
 
-// 🔥 مهم جداً
 run();
